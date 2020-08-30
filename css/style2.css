@@ -1,0 +1,74 @@
+*
+
+h5{
+	font-family: "微软雅黑";
+	font-size: 2em;
+	color: #333333;
+	font-weight: 500;	
+}
+
+h5 span{
+	animation: animate 1s linear infinite;
+}
+h5 span:nth-child(1){
+	animation-delay: 0s;
+	animation-timing-function: ease-in-out;
+	animation-duration: 4s;
+	 
+}
+h5 span:nth-child(2){
+	animation-delay: 0s;
+	animation-timing-function: ease-in-out;
+	animation-duration: 4s;
+	
+}
+h5 span:nth-child(3){
+	animation-delay: 0s;
+	animation-timing-function: ease-in-out;
+	animation-duration: 4s;
+	
+}
+h5 span:nth-child(4){
+	animation-delay: 0s;
+	animation-timing-function: ease-in-out;
+	animation-duration: 4s;
+	
+}
+h5 span:nth-child(5){
+	animation-delay: 0s;
+	animation-timing-function: ease-in-out;
+	animation-duration: 4s;
+	
+}
+h5 span:nth-child(6){
+	animation-delay: 0s;
+	animation-timing-function: ease-in-out;
+	animation-duration: 4s;
+	
+}
+h5 span:nth-child(7){
+	animation-delay: 0s;
+	animation-timing-function: ease-in-out;
+	animation-duration: 4s;
+	
+}
+
+@keyframes animate
+{
+	0%,80%
+	{
+		
+		color: #333333;
+		text-shadow:none;
+	}
+	100%
+	{
+		color: #FFFFFF;
+		text-shadow: 0 0 10px #FFFFFF,
+		             0 0 20px #FFFFFF,
+					 0 0 40px #FFFFFF,
+					 0 0 80px #FFFFFF,
+					 0 0 120px #FFFFFF,
+					 0 0 160px #FFFFFF;
+	}
+}

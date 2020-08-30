@@ -1,0 +1,2452 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>数据新闻</title>
+		
+		<link rel="stylesheet" type="text/css" href="css/style.css"/>
+		<script src="../three.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js?_v_=1596637220214"></script>
+		  <!--引入中国的地图数据js文件，引入后会自动注册地图名字和数据-->
+		  <script src="https://cdn.jsdelivr.net/npm/echarts/map/js/china.js?_v_=1596637220214"></script>
+		<link rel="stylesheet" href="css/style1.css">
+		<link rel="stylesheet" href="css/style2.css">
+		
+		
+		<style type="text/css">
+					.class1{
+						background-clip: content-box;
+						width: 1901px;
+						text-align: center;
+						letter-spacing: 0.3125rem;
+						line-height:2rem;
+						font-family: "微软雅黑";
+						font-size: medium;
+						color: white;}
+				
+					/*p{
+						width: 6.25rem;
+						height: 6.25rem;
+						background-color: blanchedalmond;
+						text-align: center;
+					}
+					p:hover{
+						width: 18.75rem;
+						height: 6.25rem;
+						background-color: aquamarine;
+						transition-delay: 90ms;
+						transition-duration: 600ms;
+						transition-timing-function: ease-out;
+					}*/
+					/*.div{
+						text-align: center;
+					}
+					*/
+					
+					#title:hover{
+						color: #FFFACD;
+						background-color: #151F23;
+						 transition-delay: 90ms;
+						 transition-duration: 1000ms;
+						 transition-timing-function: ease-out;
+					}
+					
+					.img{
+						margin-top:8.125rem;
+						 width: 12.5rem;
+						 height: 12.5rem;
+					}
+					
+					.b{
+						font-size: 3.125rem;
+						font-family: 微软雅黑;
+						opacity: 1;
+					}
+					
+					#myEcharts {
+					      width: 800px;
+					      height: 500px;
+					      border: solid 1px transparent;
+					      margin: 0 auto;
+					    }	
+					
+					h4{
+						font-size: 1.5rem;
+						font-family: "黑体";
+						color: #2F4F4F;
+					}	
+					
+					#test{
+						margin: 0;
+						overflow: hidden;
+					}
+									
+					#instructions {
+						position: absolute;
+						color: #fff;
+						bottom: 0;
+						padding-bottom: 6px;
+						font-family: sans-serif;
+						width: 100%;
+						text-align: center;
+						pointer-events: none;
+					}				
+				</style>
+			</head>	
+				
+					<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r75/three.min.js"></script>
+					<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.18.0/TweenMax.min.js"></script>
+					<script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/175711/bas.js"></script>
+					<script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/175711/OrbitControls-2.js"></script>
+				<script>
+						window.onload = init;
+						console.ward = function() {}; // what warnings?
+						
+						function init() {
+						  var root = new THREERoot({
+						    createCameraControls: !true,
+						    antialias: (window.devicePixelRatio === 1),
+						    fov: 80
+						  });
+						
+						  root.renderer.setClearColor(0x000000, 0);
+						  root.renderer.setPixelRatio(window.devicePixelRatio || 1);
+						  root.camera.position.set(0, 0, 60);
+						
+						  var width = 100;
+						  var height = 60;
+						
+						  var slide = new Slide(width, height, 'out');
+							var l1 = new THREE.ImageLoader();
+							l1.setCrossOrigin('Anonymous');
+							l1.load('https://i.loli.net/2020/08/25/LPj43YkFVK5Ns7U.png', function(img) {
+							  slide.setImage(img);
+							})
+						  root.scene.add(slide);
+						
+						  var slide2 = new Slide(width, height, 'in');
+						  var l2 = new THREE.ImageLoader();
+							l2.setCrossOrigin('Anonymous');
+							l2.load('https://i.loli.net/2020/08/25/yJtvsfjEeMxoAd1.png', function(img) {
+								slide2.setImage(img);
+							})
+							
+						  root.scene.add(slide2);
+						
+						  var tl = new TimelineMax({repeat:-1, repeatDelay:1.0, yoyo: true});
+						
+						  tl.add(slide.transition(), 0);
+						  tl.add(slide2.transition(), 0);
+						
+						  createTweenScrubber(tl);
+						
+						  window.addEventListener('keyup', function(e) {
+						    if (e.keyCode === 80) {
+						      tl.paused(!tl.paused());
+						    }
+						  });
+						}
+						
+						////////////////////
+						// CLASSES
+						////////////////////
+						
+						function Slide(width, height, animationPhase) {
+						  var plane = new THREE.PlaneGeometry(width, height, width * 2, height * 2);
+						
+						  THREE.BAS.Utils.separateFaces(plane);
+						
+						  var geometry = new SlideGeometry(plane);
+						
+						  geometry.bufferUVs();
+						
+						  var aAnimation = geometry.createAttribute('aAnimation', 2);
+						  var aStartPosition = geometry.createAttribute('aStartPosition', 3);
+						  var aControl0 = geometry.createAttribute('aControl0', 3);
+						  var aControl1 = geometry.createAttribute('aControl1', 3);
+						  var aEndPosition = geometry.createAttribute('aEndPosition', 3);
+						
+						  var i, i2, i3, i4, v;
+						
+						  var minDuration = 0.8;
+						  var maxDuration = 1.2;
+						  var maxDelayX = 0.9;
+						  var maxDelayY = 0.125;
+						  var stretch = 0.11;
+						
+						  this.totalDuration = maxDuration + maxDelayX + maxDelayY + stretch;
+						
+						  var startPosition = new THREE.Vector3();
+						  var control0 = new THREE.Vector3();
+						  var control1 = new THREE.Vector3();
+						  var endPosition = new THREE.Vector3();
+						
+						  var tempPoint = new THREE.Vector3();
+						
+						  function getControlPoint0(centroid) {
+						    var signY = Math.sign(centroid.y);
+						
+						    tempPoint.x = THREE.Math.randFloat(0.1, 0.3) * 50;
+						    tempPoint.y = signY * THREE.Math.randFloat(0.1, 0.3) * 70;
+						    tempPoint.z = THREE.Math.randFloatSpread(20);
+						
+						    return tempPoint;
+						  }
+						
+						  function getControlPoint1(centroid) {
+						    var signY = Math.sign(centroid.y);
+						
+						    tempPoint.x = THREE.Math.randFloat(0.3, 0.6) * 50;
+						    tempPoint.y = -signY * THREE.Math.randFloat(0.3, 0.6) * 70;
+						    tempPoint.z = THREE.Math.randFloatSpread(20);
+						
+						    return tempPoint;
+						  }
+						
+						  for (i = 0, i2 = 0, i3 = 0, i4 = 0; i < geometry.faceCount; i++, i2 += 6, i3 += 9, i4 += 12) {
+						    var face = plane.faces[i];
+						    var centroid = THREE.BAS.Utils.computeCentroid(plane, face);
+						
+						    // animation
+						    var duration = THREE.Math.randFloat(minDuration, maxDuration);
+						    var delayX = THREE.Math.mapLinear(centroid.x, -width * 0.5, width * 0.5, 0.0, maxDelayX);
+						    var delayY;
+						
+						    if (animationPhase === 'in') {
+						      delayY = THREE.Math.mapLinear(Math.abs(centroid.y), 0, height * 0.5, 0.0, maxDelayY)
+						    }
+						    else {
+						      delayY = THREE.Math.mapLinear(Math.abs(centroid.y), 0, height * 0.5, maxDelayY, 0.0)
+						    }
+						
+						    for (v = 0; v < 6; v += 2) {
+						      aAnimation.array[i2 + v]     = delayX + delayY + (Math.random() * stretch * duration);
+						      aAnimation.array[i2 + v + 1] = duration;
+						    }
+						
+						    // positions
+						
+						    endPosition.copy(centroid);
+						    startPosition.copy(centroid);
+						
+						    if (animationPhase === 'in') {
+						      control0.copy(centroid).sub(getControlPoint0(centroid));
+						      control1.copy(centroid).sub(getControlPoint1(centroid));
+						    }
+						    else { // out
+						      control0.copy(centroid).add(getControlPoint0(centroid));
+						      control1.copy(centroid).add(getControlPoint1(centroid));
+						    }
+						
+						    for (v = 0; v < 9; v += 3) {
+						      aStartPosition.array[i3 + v]     = startPosition.x;
+						      aStartPosition.array[i3 + v + 1] = startPosition.y;
+						      aStartPosition.array[i3 + v + 2] = startPosition.z;
+						
+						      aControl0.array[i3 + v]     = control0.x;
+						      aControl0.array[i3 + v + 1] = control0.y;
+						      aControl0.array[i3 + v + 2] = control0.z;
+						
+						      aControl1.array[i3 + v]     = control1.x;
+						      aControl1.array[i3 + v + 1] = control1.y;
+						      aControl1.array[i3 + v + 2] = control1.z;
+						
+						      aEndPosition.array[i3 + v]     = endPosition.x;
+						      aEndPosition.array[i3 + v + 1] = endPosition.y;
+						      aEndPosition.array[i3 + v + 2] = endPosition.z;
+						    }
+						  }
+						
+						  var material = new THREE.BAS.BasicAnimationMaterial(
+						    {
+						      shading: THREE.FlatShading,
+						      side: THREE.DoubleSide,
+						      uniforms: {
+						        uTime: {type: 'f', value: 0}
+						      },
+						      shaderFunctions: [
+						        THREE.BAS.ShaderChunk['cubic_bezier'],
+						        //THREE.BAS.ShaderChunk[(animationPhase === 'in' ? 'ease_out_cubic' : 'ease_in_cubic')],
+						        THREE.BAS.ShaderChunk['ease_in_out_cubic'],
+						        THREE.BAS.ShaderChunk['quaternion_rotation']
+						      ],
+						      shaderParameters: [
+						        'uniform float uTime;',
+						        'attribute vec2 aAnimation;',
+						        'attribute vec3 aStartPosition;',
+						        'attribute vec3 aControl0;',
+						        'attribute vec3 aControl1;',
+						        'attribute vec3 aEndPosition;',
+						      ],
+						      shaderVertexInit: [
+						        'float tDelay = aAnimation.x;',
+						        'float tDuration = aAnimation.y;',
+						        'float tTime = clamp(uTime - tDelay, 0.0, tDuration);',
+						        'float tProgress = ease(tTime, 0.0, 1.0, tDuration);'
+						        //'float tProgress = tTime / tDuration;'
+						      ],
+						      shaderTransformPosition: [
+						        (animationPhase === 'in' ? 'transformed *= tProgress;' : 'transformed *= 1.0 - tProgress;'),
+						        'transformed += cubicBezier(aStartPosition, aControl0, aControl1, aEndPosition, tProgress);'
+						      ]
+						    },
+						    {
+						      map: new THREE.Texture(),
+						    }
+						  );
+						
+						  THREE.Mesh.call(this, geometry, material);
+						
+						  this.frustumCulled = false;
+						}
+						Slide.prototype = Object.create(THREE.Mesh.prototype);
+						Slide.prototype.constructor = Slide;
+						Object.defineProperty(Slide.prototype, 'time', {
+						  get: function () {
+						    return this.material.uniforms['uTime'].value;
+						  },
+						  set: function (v) {
+						    this.material.uniforms['uTime'].value = v;
+						  }
+						});
+						
+						Slide.prototype.setImage = function(image) {
+						  this.material.uniforms.map.value.image = image;
+						  this.material.uniforms.map.value.needsUpdate = true;
+						};
+						
+						Slide.prototype.transition = function() {
+						  return TweenMax.fromTo(this, 3.0, {time:0.0}, {time:this.totalDuration, ease:Power0.easeInOut});
+						};
+						
+						
+						function SlideGeometry(model) {
+						  THREE.BAS.ModelBufferGeometry.call(this, model);
+						}
+						SlideGeometry.prototype = Object.create(THREE.BAS.ModelBufferGeometry.prototype);
+						SlideGeometry.prototype.constructor = SlideGeometry;
+						SlideGeometry.prototype.bufferPositions = function () {
+						  var positionBuffer = this.createAttribute('position', 3).array;
+						
+						  for (var i = 0; i < this.faceCount; i++) {
+						    var face = this.modelGeometry.faces[i];
+						    var centroid = THREE.BAS.Utils.computeCentroid(this.modelGeometry, face);
+						
+						    var a = this.modelGeometry.vertices[face.a];
+						    var b = this.modelGeometry.vertices[face.b];
+						    var c = this.modelGeometry.vertices[face.c];
+						
+						    positionBuffer[face.a * 3]     = a.x - centroid.x;
+						    positionBuffer[face.a * 3 + 1] = a.y - centroid.y;
+						    positionBuffer[face.a * 3 + 2] = a.z - centroid.z;
+						
+						    positionBuffer[face.b * 3]     = b.x - centroid.x;
+						    positionBuffer[face.b * 3 + 1] = b.y - centroid.y;
+						    positionBuffer[face.b * 3 + 2] = b.z - centroid.z;
+						
+						    positionBuffer[face.c * 3]     = c.x - centroid.x;
+						    positionBuffer[face.c * 3 + 1] = c.y - centroid.y;
+						    positionBuffer[face.c * 3 + 2] = c.z - centroid.z;
+						  }
+						};
+						
+						
+						function THREERoot(params) {
+						  params = utils.extend({
+						    fov: 60,
+						    zNear: 10,
+						    zFar: 100000,
+						
+						    createCameraControls: true
+						  }, params);
+						
+						  this.renderer = new THREE.WebGLRenderer({
+						    antialias: params.antialias,
+						    alpha: true
+						  });
+						  this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+						  document.getElementById('three-container').appendChild(this.renderer.domElement);
+						
+						  this.camera = new THREE.PerspectiveCamera(
+						    params.fov,
+						    window.innerWidth / window.innerHeight,
+						    params.zNear,
+						    params.zfar
+						  );
+						
+						  this.scene = new THREE.Scene();
+						
+						  if (params.createCameraControls) {
+						    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+						  }
+						
+						  this.resize = this.resize.bind(this);
+						  this.tick = this.tick.bind(this);
+						
+						  this.resize();
+						  this.tick();
+						
+						  window.addEventListener('resize', this.resize, false);
+						}
+						THREERoot.prototype = {
+						  tick: function () {
+						    this.update();
+						    this.render();
+						    requestAnimationFrame(this.tick);
+						  },
+						  update: function () {
+						    this.controls && this.controls.update();
+						  },
+						  render: function () {
+						    this.renderer.render(this.scene, this.camera);
+						  },
+						  resize: function () {
+						    this.camera.aspect = window.innerWidth / window.innerHeight;
+						    this.camera.updateProjectionMatrix();
+						
+						    this.renderer.setSize(window.innerWidth, window.innerHeight);
+						  }
+						};
+						
+						////////////////////
+						// UTILS
+						////////////////////
+						
+						var utils = {
+						  extend: function (dst, src) {
+						    for (var key in src) {
+						      dst[key] = src[key];
+						    }
+						
+						    return dst;
+						  },
+						  randSign: function () {
+						    return Math.random() > 0.5 ? 1 : -1;
+						  },
+						  ease: function (ease, t, b, c, d) {
+						    return b + ease.getRatio(t / d) * c;
+						  },
+						  fibSpherePoint: (function () {
+						    var vec = {x: 0, y: 0, z: 0};
+						    var G = Math.PI * (3 - Math.sqrt(5));
+						
+						    return function (i, n, radius) {
+						      var step = 2.0 / n;
+						      var r, phi;
+						
+						      vec.y = i * step - 1 + (step * 0.5);
+						      r = Math.sqrt(1 - vec.y * vec.y);
+						      phi = i * G;
+						      vec.x = Math.cos(phi) * r;
+						      vec.z = Math.sin(phi) * r;
+						
+						      radius = radius || 1;
+						
+						      vec.x *= radius;
+						      vec.y *= radius;
+						      vec.z *= radius;
+						
+						      return vec;
+						    }
+						  })(),
+						  spherePoint: (function () {
+						    return function (u, v) {
+						      u === undefined && (u = Math.random());
+						      v === undefined && (v = Math.random());
+						
+						      var theta = 2 * Math.PI * u;
+						      var phi = Math.acos(2 * v - 1);
+						
+						      var vec = {};
+						      vec.x = (Math.sin(phi) * Math.cos(theta));
+						      vec.y = (Math.sin(phi) * Math.sin(theta));
+						      vec.z = (Math.cos(phi));
+						
+						      return vec;
+						    }
+						  })()
+						};
+						
+						function createTweenScrubber(tween, seekSpeed) {
+						  seekSpeed = seekSpeed || 0.001;
+						
+						  function stop() {
+						    TweenMax.to(tween, 1, {timeScale:0});
+						  }
+						
+						  function resume() {
+						    TweenMax.to(tween, 1, {timeScale:1});
+						  }
+						
+						  function seek(dx) {
+						    var progress = tween.progress();
+						    var p = THREE.Math.clamp((progress + (dx * seekSpeed)), 0, 1);
+						
+						    tween.progress(p);
+						  }
+						
+						  var _cx = 0;
+						
+						  // desktop
+						  var mouseDown = false;
+						  document.body.style.cursor = 'pointer';
+						
+						  window.addEventListener('mousedown', function(e) {
+						    mouseDown = true;
+						    document.body.style.cursor = 'ew-resize';
+						    _cx = e.clientX;
+						    stop();
+						  });
+						  window.addEventListener('mouseup', function(e) {
+						    mouseDown = false;
+						    document.body.style.cursor = 'pointer';
+						    resume();
+						  });
+						  window.addEventListener('mousemove', function(e) {
+						    if (mouseDown === true) {
+						      var cx = e.clientX;
+						      var dx = cx - _cx;
+						      _cx = cx;
+						
+						      seek(dx);
+						    }
+						  });
+						  // mobile
+						  window.addEventListener('touchstart', function(e) {
+						    _cx = e.touches[0].clientX;
+						    stop();
+						    e.preventDefault();
+						  });
+						  window.addEventListener('touchend', function(e) {
+						    resume();
+						    e.preventDefault();
+						  });
+						  window.addEventListener('touchmove', function(e) {
+						    var cx = e.touches[0].clientX;
+						    var dx = cx - _cx;
+						    _cx = cx;
+						
+						    seek(dx);
+						    e.preventDefault();
+						  });
+						}
+				
+					</script>
+	
+	
+	<body class="class1">
+
+		<!--<img src="img/小人.png" class="img">--> 	
+		<!--<img src="img/头图.jpg" width="1890px" height="800">	
+		<b class="b">我是标题</b> 	-->	
+		
+		<div style="z-index:1"><img src="img/头图.png" width="1898px" ></div>
+		<div 
+		style="position:absolute;
+		 left:400px; 
+		 top:380px; 
+		 width:1000px; 
+		 height:60px; 
+		 z-index:2;
+		 text-align:center;
+		 color: white;
+		 background-color: #7A0027;">
+		<h1 id="title" >星星夜半时<br/></h1>
+		<h2>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;——中国未成年人被性侵概况</h2></div>
+		
+		<br/><br/><br/>
+		<div style="
+		margin: 0 auto;
+		width: 750px;	
+		 color: white;
+		 background-color:gainsboro(0.3);
+		 text-align:left;">	
+		&nbsp;&nbsp;&nbsp;&nbsp;根据世界卫生组织（WHO）的规定，“未成年性侵犯”是指儿童卷入参加不能够完全理解的性活动，或因不具备相关知识而同意的性活动，或因发育程度限制而无法知情同意的性活动，或破坏法律或社会禁忌的性活动。目前，中国还有许多这样的未成年性侵事件，在各个隐秘的角落滋长。
+		</div>
+	
+		<div id="ltitle">
+		<br/><br/><br/>
+		<h5>	——
+		<span>星</span>
+		<span>屑</span>
+		<span>散</span>
+		<span>落</span>
+		——</h5><br/><br/></div>
+	
+	
+	<div style="margin: 0 auto;
+		width: 750px;
+	 color: white;
+	 background-color:gainsboro(0.3);
+	 text-align: left;">	
+	&nbsp;&nbsp;&nbsp;&nbsp;2020年4月8日,某媒体发布了一条时长6分钟短片，一名化名为“李星星”的女孩自述“被烟台上市公司高管性侵四年”。从2016年起，她和“养父”鲍某某一起生活，3年时间内遭到多次性侵，其自述“第一次被性侵时刚满14周岁”。互联网上，关于未成年人被性侵的讨论日渐热烈。破涛汹涌之下，还有更多受害者，等待着救赎。
+	</div>
+	<br/><br/>
+		<h1><small>李星星的歌</small></h1>
+		<br/>
+		<div style="margin: 0 auto;
+		width: 750px;
+		 color: white;
+		 background-color:gainsboro(0.3);
+		 text-align: left;">	
+		&nbsp;&nbsp;&nbsp;&nbsp;我们将李星星本人撰写（或为以李星星为原型）的小说《生命的遗书》中第二、三章进行了文本情感分析，并通过其情感得分生成一段旋律，这段音频是属于“李星星的歌”，也是李星星想向大众传递的声音。
+		</div>
+		<br/><br/>
+	<video src="img/vedio.mp4" width="800px"  autoplay controls preload="auto">
+		<source src="img/vedio.mp4" type="video/mp4">
+		<source src="视频名.ogv" type="video/ogg">
+	</video>
+	
+	<br/><br/>
+<div style="margin: 0 auto;
+		width: 750px;
+	 color: white;
+	 background-color:gainsboro(0.3);
+	 text-align:left;">	
+	&nbsp;&nbsp;&nbsp;&nbsp;2013年，据公益项目“女童保护”统计，被报道的未成年人被性侵案件为125件。6年过去后，这个数字增长到了301。自2013年至2019年，媒体共曝光2397起性侵儿童的案例中，每起案例中都有不同数量的受害儿童，其中最高达到了100多人。更令人触目惊心的是，被报道的不过是“冰山一角”：2015年至2018年11月，全国法院审结的猥亵儿童案件多达11519件。而仅仅在2020年第一季度，最高人民检察院决定起诉性侵未成年人犯罪人数就达到了4151人，与2019年第一季度相比，上升了2.2%。<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;庆幸的是恶魔并非无处藏身，三十年来，未成年人遭性侵案件审理数量总体增多，法律法规不断完善。保护未成年人的权益，国家正在不断努力着。
+	</div>
+	<br/>
+	<img src="img/number.png" width="1200px" >
+	<div style="margin: 0 auto;
+		width: 600px;
+	 color: white;
+		 color: white;
+		font-size: 0.8rem;
+		 background-color:gainsboro(0.3);
+		 text-align: center;">
+		数据来源：《关于儿童性侵的司法案例数据分析报告》
+		</div>
+	<br/><br/><br/><br/>
+	<div id="ltitle">
+	<h5>	——
+	<span>星</span>
+	<span>群</span>
+	<span>暗</span>
+	<span>淡</span>
+	——</h5><br/><br/></div>
+
+	<h1><small>案发地区？</small></h1><br/>
+	<div style="margin: 0 auto;
+		width: 750px;
+		 color: white;
+		font-size: 0.8rem;
+		 background-color:gainsboro(0.3);
+		 text-align: center;">
+		(将鼠标轻轻放于地图上，查看该地区性侵未成年人的案件数量)
+		</div>
+	<div id="myEcharts"></div>
+	<br/>
+	<div style="margin: 0 auto;
+		width: 750px;
+	 color: white;
+		 color: white;
+		 background-color:gainsboro(0.3);
+		 text-align:left;">	
+		&nbsp;&nbsp;&nbsp;&nbsp;根据《关于儿童性侵的司法案例数据分析报告》，在西藏、青海和宁夏地区，被报道出的性侵未成年人案件都未超过74件。而在四川、湖南、安徽、江苏、浙江地区，被报道出的未成年人性侵案件数量居高。根据中国少年儿童文化艺术基金会女童保护基金的报告，由于案例的特殊性，以及受社会认知、风俗习惯、传播规律、搜索规则等因素影响，媒体报道案例数量的浮动属于正常现象。
+		</div>
+	  <script>
+	    //初始化echarts实例
+	    var myChart = echarts.init(document.getElementById('myEcharts'));
+	    // 指定图表的配置项和数据
+	    option = {
+	      /*title: {
+	        text: '截至2018年未成年人性侵案件数量全国分布图',
+	        left: 'center', 	       
+	      },*/		  
+	      tooltip: {
+	        trigger: 'item'
+	      },
+	      legend: {
+	        orient: 'vertical',
+	        left: 'left',
+	        data: ['中国疫情图']
+	      },
+	      visualMap: {
+	        type: 'piecewise',
+	        pieces: [
+	          { min: 940, max: 1000000, label: '大于等于940人', color: '#372a28' },
+	          { min: 606, max: 939, label: '606-939人', color: '#4e160f' },
+	          { min: 360, max: 605, label: '360-605人', color: '#974236' },
+	          { min: 75, max: 359, label: '75-359人', color: '#ee7263' },
+	          { min: 0, max: 74, label: '小于等于74人', color: '#f5bba7' },
+	        ],
+	        color: ['#E0022B', '#E09107', '#A3E00B']
+	      },
+		  
+	      toolbox: {
+	        show: true,
+	        orient: 'vertical',
+	        left: 'right',
+	        top: 'center',
+	        feature: {
+	          mark: { show: true },
+	          dataView: { show: true, readOnly: false },
+	          restore: { show: true },
+	          saveAsImage: { show: true }
+	        }
+	      },
+	      roamController: {
+	        show: true,
+	        left: 'right',
+	        mapTypeControl: {
+	          'china': true
+	        }
+	      },
+	      series: [
+	        {
+	          name: '案件数',
+	          type: 'map',
+	          mapType: 'china',
+	          roam: false,
+	          label: {
+	            show: true,
+	            color: 'rgb(249, 249, 249)'
+	          },
+	          data: [
+	            {name: '北京',value: 165}, {name: '天津',value: 192}, {name: '上海',value: 359}, {name: '重庆',value: 720}, 
+				{name: '河北',value: 564}, {name: '河南',value: 1004}, {name: '云南',value: 310}, {name: '辽宁',value: 335},
+				{name: '黑龙江',value: 345}, {name: '湖南',value: 1249},{name: '安徽',value: 1212}, {name: '山东',value: 751}, 
+				{name: '新疆',value: 199}, {name: '江苏',value: 1119}, {name: '浙江',value: 1260}, {name: '江西',value: 346},
+				{name: '湖北',value: 605}, {name: '广西',value: 465},{name: '甘肃',value: 216}, {name: '山西',value: 210}, {name: '内蒙古',value: 304}, 
+				{name: '陕西',value: 433}, {name: '吉林',value: 685}, {name: '福建',value: 939},{name: '贵州',value: 511}, {name: '广东',value: 906}, 
+				{name: '青海',value: 74}, {name: '西藏',value: 8}, {name: '四川',value: 1168}, {name: '宁夏',value: 71}, {name: '海南',value: 60}, 
+				{name: '台湾',value: 0}, {name: '香港',value: 0}, {name: '澳门',value:0} ]
+	        }
+	      ]
+	    };
+	   //使用指定的配置项和数据显示图表
+	    myChart.setOption(option);	
+	  </script>
+	  <br /><br /><br/>
+	  <h1><small>受害者年龄？</small></h1>
+	  	<br /><br/>
+		<img src="img/age.GIF" width="700px" >
+		<br/><br/>
+		<div style="margin: 0 auto;
+		width: 750px;
+			 color: white;
+			 background-color:gainsboro(0.3);
+			 text-align:left;">	
+			&nbsp;&nbsp;&nbsp;&nbsp;根据中国少年儿童文化艺术基金会女童保护基金的数据，2015年到2019年，被报道的未成年被性侵的年龄集中在7-14岁。其中7到12岁的比例从2015年的34%上升到了2019年的41.53%。巨大的数字让我们不禁思考，中国为何有如此多的未成年人遭遇恶魔之手？
+			</div>
+		<br /><br /><br/>
+		<h1><small>受害者性别？</small></h1>
+		<br /><br />
+		<img src="img/gender.jpg" width="600px"  >
+		<br /><br />
+		<div style="margin: 0 auto;
+		width: 750px;
+			 color: white;
+			 background-color:gainsboro(0.3);
+			 text-align:left;">	
+			&nbsp;&nbsp;&nbsp;&nbsp;与常识不同的是，在报道出的被性侵的未成年人中，男性的比例也不少。根据“女童保护”统计，2019年媒体公开报道的301起性侵儿童案例中， 男童为21起，受害人数量达到81人，在受害人数中占比10.69%。<br /><br/>&nbsp;&nbsp;&nbsp;&nbsp;2020年5月初，多名受害者在微信公众号和微博爆料，全国“优秀班主任”、四川省宜宾市高中老师梁某（男），在2010—2020年10年期间，利用班主任和心理健康中心主任的身份，以对学生进行心理疏导为伪装，对班上的男生实施各种程度的猥亵和骚扰，统计到的受害者已经超过20人。<br /><br/>&nbsp;&nbsp;&nbsp;&nbsp;2015年，刑法修正案（九）将原来的强制猥亵妇女罪修改为强制猥亵他人罪， 扩大了保护主体范围，打破了被害人性别的限制，不仅包括妇女，还包括十四周岁以上的男性。据律师介绍，该案件是我国首例男性教师大面积猥亵14周岁以上男性学生而进入刑事司法程序的案件。
+			</div>
+		<br /><br /><br />
+	<h1><small>作案场所？<small></h1>	
+	
+		<div style="margin: 0 auto;
+		width: 750px;
+			 color: white;
+			font-size: 0.8rem;
+			 background-color:gainsboro(0.3);
+			 text-align: center;">
+	(将鼠标轻轻放于地图上，查看该犯罪场所所占比例)
+			</div>
+		<br />
+	<div style="z-index:1"><img src="img/场所.png" width="700px" height="470" ></div>
+	<div style="margin: 0 auto;
+		width: 750px;
+		 color: white;
+		 font-size: 1rem;
+		 background-color:gainsboro(0.3);
+		 text-align:left;">	
+		&nbsp;&nbsp;&nbsp;&nbsp;从“女童保护”的数据中可以看出，学校、培训中心等未成年人密集活动的场所是性侵案的高发地。本应是未成年人安心学习之处，却成为了恶魔滋生地，因此这些地方更加需要相关部门加强监管。
+		</div>
+		
+		<!--<div
+		style="position:absolute;
+		 left:710px; 
+		 top:2850px;
+		 width:30px; 
+		 height:30px; 
+		 z-index:2; 
+		  font-size: xx-large;
+		 background-color: transparent;">
+		 <h5><span>.</span></h5>
+		</div>-->
+		
+	<div title=“根据女童保护”统计，2019年在230起表明性侵场所的案例中，发生在宾馆的有18起，占比7.83
+	style="position:absolute;
+	 left:745px; 
+	 top:6680px;
+	 width:87px; 
+	 height:87px; 
+	 z-index:2; 
+	 background-color: transparent;"> 
+	</div>	
+	
+	<div title=“根据女童保护”统计，2019年在230起表明性侵场所的案例中，发生在施害人住所的有51起，占比22.17%
+	style="position:absolute;
+	 left:657px; 
+	 top:6980px;
+	 width:87px; 
+	 height:87px; 
+	 z-index:2; 
+	 background-color:  transparent;"> 
+	</div>	
+	
+	<div title=“根据女童保护”统计，2019年在230起表明性侵场所的案例中，发生在网络上发生的有11起，占比4.78%
+	style="position:absolute;
+	 left:875px; 
+	 top:6930px;
+	 width:87px; 
+	 height:87px; 
+	 z-index:2; 
+	 background-color: transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在230起表明性侵场所的案例中，发生在公园、广场、公交等公共场合的有19起，占比8.26%
+	style="position:absolute;
+	 left:895px; 
+	 top:6790px;
+	 width:87px; 
+	 height:87px; 
+	 z-index:2; 
+	 background-color: transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在230起表明性侵场所的案例中，发生在小区、村庄、校园附近等户外场所的有31起，占比13.48%
+	style="position:absolute;
+	 left:1030px; 
+	 top:6660px;
+	 width:87px; 
+	 height:87px; 
+	 z-index:2; 
+	 background-color:  transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在230起表明性侵场所的案例中，发生在校园、培训机构的有80起，占比34.78%
+	style="position:absolute;
+	 left:1170px; 
+	 top:6700px;
+	 width:87px; 
+	 height:87px; 
+	 z-index:2; 
+	 background-color:  transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在230起表明性侵场所的案例中，发生在受害人住所的20起，占比8.70%
+	style="position:absolute;
+	 left:1140px; 
+	 top:6920px;
+	 width:87px; 
+	 height:87px; 
+	 z-index:2; 
+	 background-color:  transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在301起表明被害者和被告人关系的案例中，邻居关系占比11.32%
+	style="position:absolute;
+	 left:900px; 
+	 top:7485px;
+	 width:95px; 
+	 height:95px; 
+	 z-index:2; 
+	 background-color:  transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在301起表明被害者和被告人关系的案例中，网友关系占比9.91%
+	style="position:absolute;
+	 left:910px; 
+	 top:7896px;
+	 width:95px; 
+	 height:95px; 
+	 z-index:2; 
+	 background-color:  transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在301起表明被害者和被告人关系的案例中，亲戚朋友关系占比12.74%
+	style="position:absolute;
+	 left:600px; 
+	 top:7550px;
+	 width:95px; 
+	 height:95px; 
+	 z-index:2; 
+	 background-color: transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在301起表明被害者和被告人关系的案例中，其他生活接触人员占比19.81%
+	style="position:absolute;
+	 left:610px; 
+	 top:7800px;
+	 width:95px; 
+	 height:95px; 
+	 z-index:2; 
+	 background-color:transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在301起表明被害者和被告人关系的案例中，师生关系占比35.85%
+	style="position:absolute;
+	 left:1150px; 
+	 top:7530px;
+	 width:95px; 
+	 height:95px; 
+	 z-index:2; 
+	 background-color: transparent;"> 
+	</div>
+	
+	<div title=“根据女童保护”统计，2019年在301起表明被害者和被告人关系的案例中，家庭成员关系占比10.38%
+	style="position:absolute;
+	 left:1160px; 
+	 top:7800px;
+	 width:95px; 
+	 height:95px; 
+	 z-index:2; 
+	 background-color: transparent;"> 
+	</div>
+	<!--<p>文字文字文字</p>-->
+	
+	<br /><br /><br />
+	<h1><small>侵害者是谁？</small></h1>
+	<br />
+	</div>
+	<div style="margin: 0 auto;
+		width: 750px;
+		 color: white;
+		 font-size: 0.8rem;
+		 background-color:gainsboro(0.3);
+		 text-align: center;">
+		(将鼠标轻轻放于图标上，查看该作案者所占比例。）
+		</div>
+	<img src="img/关系.png" width="800px"  >
+	<br /><br/>
+	<div style="margin: 0 auto;
+		width: 750px;
+		 color: white;
+		 font-size: 1rem;
+		 background-color:gainsboro(0.3);
+		 text-align:left;">	
+		&nbsp;&nbsp;&nbsp;&nbsp;值得我们关注的是，离孩子们最近的家人和老师，正在加剧未成年人的性侵之殇。根据“女童保护”统计，在2019年媒体公开报道的301起案例中，熟人作案212起，占比70.43%。从近几年来发布的报告看，熟人作案比例一直居高，最高达87.87%（2014年）。而这212起熟人作案的案例中，家庭成员（父亲、继父等）作案22起，占比10.38%。<br /><br/>&nbsp;&nbsp;&nbsp;&nbsp;2020年7月，中国裁判文书网发布了彪某甲犯强奸罪一案刑事判决书，被告人彪某甲系受害人彪某某父亲，多次强奸自己的亲生女儿，判处有期徒刑七年零六个月。<br /><br/>&nbsp;&nbsp;&nbsp;&nbsp;来自湖北的黄某自2003年以来，多次以殴打等方式对当时还未满14周岁的大女儿小雅(化名)实施强奸，导致小雅先后两次怀孕并堕胎。<br/><br />&nbsp;&nbsp;&nbsp;&nbsp;2017年5月，张姓男子与其妻离婚后，与女儿小花（2007年6月出生）共同生活。2017年7月至8月间，张某在家中多次强行与小花发生性关系，致小花会阴、阴道裂伤，阴部大出血，小花后被送至当地医院治疗。<br /><br/>&nbsp;&nbsp;&nbsp;&nbsp;然而，家庭成员作案具有隐蔽性，后续治理和相关工作难度大。多起发生在家庭中的性侵案例表明，考虑到亲情、伦理、生活保障等因素，受害人往往不敢声张，不敢报警维权。未成年人在处于这样权力结构十分悬殊的弱势地位下，如何使他们敢于说出事实的真相，找到合法靠维权渠道，是我们应该思考的问题。
+		</div>
+		<br /><br /><br />
+	<div id="ltitle">
+	<br />
+	<h5 style="font-size: 2rem">——
+	<span>星</span>
+	<span>星</span>
+	<span>的</span>
+	<span>后</span>
+	<span>半</span>
+	<span>夜</span>
+	——</h5>
+	<br/><br/></div>
+	<div style="margin: 0 auto;
+		width: 750px;
+		 color: white;
+		 font-size: 1rem;
+		 background-color:gainsboro(0.3);
+		 text-align:left;">	
+		&nbsp;&nbsp;&nbsp;&nbsp;这些“星星”的背后，到底是谁在实施暴行？绝大多数的“星星”没有像李星星一样，得到广泛的关注，他们甚至没有被发现、不知道自己身上发生的是什么事情。而受到观念等影响，很多受到性侵的儿童或其家长忍气吞声，没有报案；另外就是报案后，因为缺乏证据，公安机关没有立案，由于强奸和猥亵案件难以进入司法程序，许多恶魔便肆无忌惮地对未成年人伸出了魔爪。
+		</div>	
+		<br/>
+		<h1><small>侵害者年龄？<small></h1>
+		<br/>
+		<img src="img/crimeage.gif" width="700px" height="457" ><br/>
+		<br/>
+		<div style="margin: 0 auto;
+		width: 750px;
+					 color: white;
+					 font-size: 1rem;
+					 background-color:gainsboro(0.3);
+					 text-align:left;">	
+					&nbsp;&nbsp;&nbsp;&nbsp;从数据中看出，绝大部分被告人年龄在18~60岁这个范围内。但我们也应注意到，在120位公布了年龄信息的被告人中，有15人不满18岁，还有25人超过了60岁。年龄最大的一位被告人已经94岁。
+					</div>
+					<br/><br/><br/>
+		<h1><small>侵害者作案动机？<small></h1>
+		<br/>
+		<div style="margin: 0 auto;
+		width: 750px;
+					 color: white;
+					 font-size: 1rem;
+					 background-color:gainsboro(0.3);
+					 text-align:left;">	
+					&nbsp;&nbsp;&nbsp;&nbsp;震惊与愤怒之余，我们也想进一步看清楚，这些施害者到底为什么实施暴行？据2019年度《上海市妇女儿童权益司法保护工作白皮书》披露，2019年在上海法院系统审判的性侵犯罪中，主要包含猥亵儿童罪、强奸罪和强制猥亵罪;其中猥亵儿童罪占比达58.8%，强奸罪和强制猥亵罪分别占31.1%和8.1%，下图分别是强奸案和猥亵案的被告人犯罪动机。
+					</div>
+					<br/>
+		<img src="img/强奸动机.png" width="700px" height="470" ><br/>
+		<img src="img/猥亵动机.png" width="700px" height="470" >
+		<br/><br/>
+		<div style="margin: 0 auto;
+		width: 750px;
+			 color: white;
+			 font-size: 1rem;
+			 background-color:gainsboro(0.3);
+			 text-align:left;">	
+			&nbsp;&nbsp;&nbsp;&nbsp;从数据图中可以看出，在猥亵和侮辱等案件中，表示自己仅仅是“酒后起性”的动机的犯罪者最多，其次是“报复对方”。关注侵害者的动机，也能够帮助我们了解如何教育大众、规避风险。		
+			</div>
+			<br/><br/><br/>
+			<h1><small>被害者受害方式和被告人受惩手段？<small></h1>
+			<br/>
+			<div style="margin: 0 auto;
+		width: 750px;
+						 color: white;
+						 font-size: 1rem;
+						 background-color:gainsboro(0.3);
+						 text-align:left;">	
+						&nbsp;&nbsp;&nbsp;&nbsp;在中国裁判文书网上以“性侵”+“未成年”+“2019年全年范围”为关键词进行搜索，我们筛选出了2019年的69篇相关文书。经过梳理和去重，3例非强奸案，2例非未成年人，1例无罪，2例同时包含一审二审文书，后总计61例，其中涉及到85个作案人和68个受害者。<br /><br/>&nbsp;&nbsp;&nbsp;&nbsp;左图中，女孩身体里的每一颗星星都是1起案件中的受害者，而右图中，每一颗星星则对应着每起案件中的被告人。
+					</div>
+				<br/>
+						<div style="margin: 0 auto;
+				width: 750px;
+							 color: white;
+							 font-size: 0.8rem;
+							 background-color:gainsboro(0.3);
+							 text-align: center;">
+						(请将鼠标轻轻移动到不同星星上，查看受害者受害方式和被告人受惩手段）
+							</div>
+					
+				<img src="img/vs.png" width="1000px" >
+		<br/>
+		
+		<div title=2018年9月10日，福州市马某（时14岁）。被强行亲吻、抚摸乳房、阴道抠弄和口交。
+		style="position:absolute;
+		 left:758px; 
+		 top:12195px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>	
+		
+		<div title=2018年9月21日，内江市罗某（时15岁）。被强奸。
+		style="position:absolute;
+		 left:778px; 
+		 top:12193px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年1月，贵州省李某（时16岁，患有智力残疾）。被强奸致怀孕。
+		style="position:absolute;
+		 left:791px; 
+		 top:12188px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color:transparent;"> 
+		</div>
+		
+		<div title=2017年春季至秋季间，上海市陈某（13岁）、董某某（14岁）、俞某某（13岁）。被强行摸脸、亲脸和强奸。
+		style="position:absolute;
+		 left:752px; 
+		 top:12205px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年9月26日，上海市仲某（时13岁）。被言语恐吓、强奸。
+		style="position:absolute;
+		 left:735px; 
+		 top:12198px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年7月19日，苏州市姜某某（时16岁）。被强奸。
+		style="position:absolute;
+		 left:735px; 
+		 top:12218px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年11月3日，晋江市吕某某（15岁）。被强奸，未遂。
+		style="position:absolute;
+		 left:725px; 
+		 top:12230px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年4月，陈某某（时11岁）。被继父诱骗强奸2次。
+		style="position:absolute;
+		 left:725px; 
+		 top:12210px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年8月，张某（时16岁）。被强奸，未遂，并致手臂外侧瘀血。
+		style="position:absolute;
+		 left:713px; 
+		 top:12215px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2015年4月24日和2015年5月28日，古蔺县方某（时未成年）。被其父强行发生性关系2次。
+		style="position:absolute;
+		 left:710px; 
+		 top:12234px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年5月10日至5月28日期间，北京市柯某某（6岁）。被生殖器接触的方式进行奸淫。
+		style="position:absolute;
+		 left:699px; 
+		 top:12224px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年4月，六盘水市杨某（时16岁，智力发育障碍）。诱骗受害者做他妻子并多次与杨发生性关系。
+		style="position:absolute;
+		 left:692px; 
+		 top:12204px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年3月至4月16日期间，凤城市张某某（时14岁）。被其监护人强奸。
+		style="position:absolute;
+		 left:705px; 
+		 top:12200px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年6月4日，新泰市张某（时14岁）。被强奸，未遂，挣扎过程中致张某右眼部损伤为轻微伤。
+		style="position:absolute;
+		 left:670px; 
+		 top:12198px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年8月24日，南丹县陈某（时13岁）。被强行抚摸胸部和阴部后轮奸。
+		style="position:absolute;
+		 left:684px; 
+		 top:12190px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年三四月间，北京市刘某（女，11岁）。被强行抠摸生殖器的猥亵和强奸。
+		style="position:absolute;
+		 left:718px; 
+		 top:12246px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年7月，汕头市陈某（时16岁，智力低下、精神方面存在缺陷）。被强行发生性关系致怀孕。
+		style="position:absolute;
+		 left:758px; 
+		 top:12220px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年2月22日，阜南县刘某（时14岁）。被强行按压、咬乳房后强奸，未遂。
+		style="position:absolute;
+		 left:748px; 
+		 top:12230px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年9月~2018年6月17日间，西宁市李某某（时17岁，智力残疾）。被先后4次强奸。
+		style="position:absolute;
+		 left:738px; 
+		 top:12245px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年11月13日，内江市潘某（时15岁，智力残疾）。被多次以抚摸胸部、阴部的方式猥亵、强奸。
+		style="position:absolute;
+		 left:752px; 
+		 top:12250px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年11月1日，西宁市熊某（时未成年）。被语言威胁、强奸。
+		style="position:absolute;
+		 left:740px; 
+		 top:12263px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2015年~2018年，贵州省彭某（时13岁）。于多地被其父以每个月4、5次的频率性侵害并致怀孕。
+		style="position:absolute;
+		 left:726px; 
+		 top:12258px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年7月21日至2019年2月21日，项某（女，时9岁）。于多地被强迫发生性关系十余次。
+		style="position:absolute;
+		 left:727px; 
+		 top:12276px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年10月，汤原县李某（时17岁，智力障碍）。被多次强奸。
+		style="position:absolute;
+		 left:707px; 
+		 top:12270px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年7月，古蔺县罗某（时13岁，精神发育迟滞）。被两名罪犯多次强奸并致怀孕。
+		style="position:absolute;
+		 left:701px; 
+		 top:12250px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2014年~2018年11月，南充市耿某、耿某婷（系两姐妹）时均未满14岁）。耿某于多地被强奸8次、猥亵5次，耿某婷被猥亵4次并致怀孕。
+		style="position:absolute;
+		 left:747px; 
+		 top:12281px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年1月，苏州市苏某某（时15岁）。被猥亵、强奸。
+		style="position:absolute;
+		 left:706px; 
+		 top:12296px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年9月，珙县刘某（时9岁，聋哑人）。被亲父多次强行奸淫。
+		style="position:absolute;
+		 left:697px; 
+		 top:12313px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2013年6月18日~22日，泰安市李某（时14岁）。被多次强奸。
+		style="position:absolute;
+		 left:720px; 
+		 top:12315px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年4月24日，新邵县罗某（时17岁，脑瘫）。被强奸，未遂。
+		style="position:absolute;
+		 left:734px; 
+		 top:12326px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2016年，金堂县贺某（时14岁）。被强行多次发生性关系致怀孕并强行录像。
+		style="position:absolute;
+		 left:722px; 
+		 top:12293px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年4月19日与2019年3月18日，陈某（时未成年）。被抢劫、强行口淫后发生性关系，未遂。
+		style="position:absolute;
+		 left:741px; 
+		 top:12305px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年6月2日，平阳县陈某（时未成年）。被罪犯及其同伙共同强奸。
+		style="position:absolute;
+		 left:755px; 
+		 top:12310px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年~2019年5月，南充市阳某（时14岁，智力障碍）。于多地被强迫发生7、8次性关系并致怀孕。
+		style="position:absolute;
+		 left:754px; 
+		 top:12327px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2016年夏天，隆丰镇谭某某（时12岁）。被强迫手淫、口交以及阴茎摩擦大腿内侧的方式猥亵并多次发生性关系。
+		style="position:absolute;
+		 left:745px; 
+		 top:12345px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年5月，绍兴市张某（时16岁）。被强奸。
+		style="position:absolute;
+		 left:763px; 
+		 top:12345px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年8月，铜陵市程某（时13岁）胡某（时12岁）查某（时16岁）。均被强奸。
+		style="position:absolute;
+		 left:746px; 
+		 top:12364px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年6月~7月，南通市李某某（时14岁）。被强行抚摸乳房等方式先后5次猥亵。
+		style="position:absolute;
+		 left:764px; 
+		 top:12376px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年9月至2019年6月，上海市吴某某（时9岁）、袁某某（时9岁）等人。先后多次被触摸胸部、阴部等方式猥亵。
+		style="position:absolute;
+		 left:756px; 
+		 top:12392px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年11月中旬，南宁市文某（时5岁）。被强行观看淫秽视频、手淫、口淫。
+		style="position:absolute;
+		 left:743px; 
+		 top:12388px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=仪陇县李某某（时16岁）、罗某（时14岁）。被强行抚摸乳房、亲吻等方式威胁。
+		style="position:absolute;
+		 left:755px; 
+		 top:12392px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年5月22日晚，苍南县王某（时未成年）。被殴打、猥亵并强行拍摄私密视频。
+		style="position:absolute;
+		 left:758px; 
+		 top:12409px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年3月~5月20日，武宣县黄某（时10岁，农村留守儿童）。被多次猥亵。
+		style="position:absolute;
+		 left:745px; 
+		 top:12419px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年5月18日，贵定县欧某（时未成年）。被揉搓乳房的方式猥亵。
+		style="position:absolute;
+		 left:756px; 
+		 top:12429px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年10月15日、同月16日~18日间、同月19日，武汉市刘某（时16岁）。被先后三次强奸，前两次因性功能障碍未遂，第三次既遂。
+		style="position:absolute;
+		 left:745px; 
+		 top:12439px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年7月6日，柳州市黄某（时未成年）。发生车祸事故后被强奸。
+		style="position:absolute;
+		 left:760px; 
+		 top:12448px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年9月27日，羊某某（时未成年）。被强行勒住脖子、强奸。
+		style="position:absolute;
+		 left:749px; 
+		 top:12464px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2013年7月12日，惠州市吴某（时未成年人）。被暴力欺凌、四人轮流强奸。
+		style="position:absolute;
+		 left:752px; 
+		 top:12481px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年7月，保靖县张某（时未成年）。被强行骗取裸照、强奸，未遂。
+		style="position:absolute;
+		 left:714px; 
+		 top:12329px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年，靖州县伍某（时未成年）。被继父言语恐吓、多次强奸。
+		style="position:absolute;
+		 left:696px; 
+		 top:12341px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年12月17日，融水县凤某某（时16岁）。被两名罪犯轮流强奸。
+		style="position:absolute;
+		 left:718px; 
+		 top:12350px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2015年至2017年，厦门市林某（时12岁）。多次被其父强奸。
+		style="position:absolute;
+		 left:704px; 
+		 top:12356px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2019年2月12日，海门市袁某（时16岁）。被灌醉后强奸。
+		style="position:absolute;
+		 left:695px; 
+		 top:12368px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年4月7日，北京市许某某（时未成年）。被强行抚摸胸部并强奸，致处女膜破裂，阴道内1厘米裂伤。
+		style="position:absolute;
+		 left:715px; 
+		 top:12378px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年11月至12月，兴城市周某（13岁）。先后三次被猥亵，致小阴唇内侧下方可见3个充血点，阴唇后联合括膜有一长0.3CM左右裂痕。
+		style="position:absolute;
+		 left:701px; 
+		 top:12395px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年9月至次年4月，遂溪县朱某（时9岁）。被多次威胁，三次强奸，致处女膜陈旧性裂伤。
+		style="position:absolute;
+		 left:715px; 
+		 top:12397px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年9月1日，高某（时17岁）。被强行使用含氟硝西泮的药物（俗称“蓝精灵”），后被轮奸。
+		style="position:absolute;
+		 left:716px; 
+		 top:12414px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=毕节市刘某（时未成年）。被强行灌醉、发布“裸照”等威胁、辱骂、殴打等手段，多次被轮流强奸。
+		style="position:absolute;
+		 left:709px; 
+		 top:12428px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=陈某某（时未成年）。被强奸并致双肩、背部、双肘部受伤。
+		style="position:absolute;
+		 left:720px; 
+		 top:12438px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年6月24日，潘阳县周某（时未成年）。喝醉后被强奸。
+		style="position:absolute;
+		 left:710px; 
+		 top:12444px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2017年5月底~2017年8月底，潘集区王某（时17岁，智力障碍3级）。被多次强行抠摸阴部和乳房并发生性关系。
+		style="position:absolute;
+		 left:703px; 
+		 top:12464px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=2018年9月10日，福州市马某（时14岁）。被强行亲吻、抚摸乳房、阴道抠弄和口交。
+		style="position:absolute;
+		 left:711px; 
+		 top:12478px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		
+		
+		
+		
+		
+		<div title=方雷（福州市马某案罪犯）。强奸罪，判处有期徒刑一年四个月。
+		style="position:absolute;
+		 left:994px; 
+		 top:12051px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=刘飞（内江市罗某案罪犯）。强奸罪，判处有期徒刑三年七个月。
+		style="position:absolute;
+		 left:1000px; 
+		 top:12076px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=彭胜华（贵州省李某案罪犯）。强奸罪，判处有期徒刑六年，赔偿经济损失共人民币7612.74元。
+		style="position:absolute;
+		 left:1015px; 
+		 top:12081px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=钱家豪（上海市陈某、董某某、俞某木案罪犯）。强奸罪，判处有期徒刑十五年，剥夺政治权利四年。
+		style="position:absolute;
+		 left:1025px; 
+		 top:12113px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=秋显滨（上海市仲某案罪犯）。强奸罪，判处有期徒刑四年六个月。
+		style="position:absolute;
+		 left:1057px; 
+		 top:12106px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=王悦（苏州市姜某某案罪犯）。强奸罪，判处有期徒刑三年二个月。
+		style="position:absolute;
+		 left:1088px; 
+		 top:12110px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=肖建泰（晋江市吕某案罪犯）。强奸罪，判处有期徒刑三年六个月。
+		style="position:absolute;
+		 left:1117px; 
+		 top:12110px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=姚延峰（张某案罪犯）。强奸罪，判处有期徒刑三年。
+		style="position:absolute;
+		 left:1129px; 
+		 top:12088px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=陈盛（陈某某案罪犯）。强奸罪，判处有期徒刑十一年；犯猥亵儿童罪，判处有期徒刑四年，决定执行有期徒刑十四年。
+		style="position:absolute;
+		 left:1149px; 
+		 top:12076px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=方显刚（古蔺县方某案罪犯）。强奸罪，判处有期徒刑七年六个月。
+		style="position:absolute;
+		 left:1119px; 
+		 top:12110px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=李斌（北京市柯某某案罪犯）。强奸罪，判处有期徒刑五年。
+		style="position:absolute;
+		 left:1100px; 
+		 top:12126px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=李宗良（六盘水市杨某案罪犯）。强奸罪，判处有期徒刑五年。
+		style="position:absolute;
+		 left:1072px; 
+		 top:12126px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=刘传平（新泰市张某案罪犯）。强奸罪，判处有期徒刑二年零六个月。
+		style="position:absolute;
+		 left:1053px; 
+		 top:12126px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=张春友（凤城市张某某案罪犯）。强奸罪判处有期徒刑14年；撤销其监护人资格。
+		style="position:absolute;
+		 left:1076px; 
+		 top:12140px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=韦宇（南丹县陈某案共犯）。强奸罪，判处有期徒刑十年；王启军（南丹县陈某案共犯）。强奸罪，判处有期徒刑十年。
+		style="position:absolute;
+		 left:1061px; 
+		 top:12150px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=赵建国（北京市刘某案罪犯）。强奸罪，判处有期徒刑五年六个月；犯猥亵儿童罪，判处有期徒刑二年，决定执行有期徒刑七年。
+		style="position:absolute;
+		 left:1038px; 
+		 top:12146px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=王振体（汕头市陈某案罪犯）。强奸罪，判处有期徒刑五年；赔偿各项损失207，909.85元。
+		style="position:absolute;
+		 left:1090px; 
+		 top:12150px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=杜朝峰（阜南县刘某案罪犯）。强奸罪，判处有期徒刑二年八个月。
+		style="position:absolute;
+		 left:1110px; 
+		 top:12144px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=李营业（西宁市李某某案罪犯）。强奸罪，判处有期徒刑五年。
+		style="position:absolute;
+		 left:1115px; 
+		 top:12164px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=罗某某（内江市潘某案罪犯）。犯强奸罪，判处有期徒刑三年九个月；犯强制猥亵罪，判处有期徒刑一年六个月；决定执行有期徒刑四年八个月。
+		style="position:absolute;
+		 left:1085px; 
+		 top:12163px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=马白开来（西宁市熊某案罪犯）。犯强制猥亵罪，判处有期徒刑五年六个月。
+		style="position:absolute;
+		 left:1082px; 
+		 top:12183px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=彭某（贵州省彭某案罪犯）。犯强奸罪，判处有期徒刑八年六个月，剥夺政治权利二年。
+		style="position:absolute;
+		 left:1104px; 
+		 top:12180px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=项付云（古蔺县项某案罪犯）。强奸罪，判处有期徒刑八年六个月。
+		style="position:absolute;
+		 left:1103px; 
+		 top:12205px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=姚加庆（汤原县李某案罪犯）。强奸罪，判处有期徒刑六年。
+		style="position:absolute;
+		 left:1063px; 
+		 top:12173px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=袁国良（古蔺县罗某共犯）强奸罪，判处有期徒刑五年十个月；杜玉华（古蔺县罗某共犯）强奸罪，判处有期徒刑五年。
+		style="position:absolute;
+		 left:1044px; 
+		 top:12178px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=张茂泉（南充市耿某、耿某婷案罪犯）。强奸罪，判处有期徒刑八年，犯猥亵儿童罪，判处有期徒刑六年；数罪并罚，决定执行有期徒刑十三年。
+		style="position:absolute;
+		 left:1044px; 
+		 top:12198px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=陈红扣（苏州市苏某某案罪犯）。犯强制猥亵罪，判处有期徒刑六个月；犯强奸罪，判处有期徒刑二年六个月，决定执行有期徒刑三年。
+		style="position:absolute;
+		 left:1059px; 
+		 top:12194px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=刘汝强（珙县刘某案罪犯）。强奸罪，判处有期徒刑十一年；撤销刘汝强对刘某的监护人资格。
+		style="position:absolute;
+		 left:1088px; 
+		 top:12205px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=韩秀近（泰安市李某案罪犯）。强奸罪，判处有期徒刑三年。
+		style="position:absolute;
+		 left:1074px; 
+		 top:12216px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=何晋高（新邵县罗某案罪犯）。强奸罪，判处有期徒刑二年八个月。
+		style="position:absolute;
+		 left:1056px; 
+		 top:12216px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=贺明军（金堂县贺某案罪犯）。强奸罪，判处有期徒刑九年。
+		style="position:absolute;
+		 left:1043px; 
+		 top:12229px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=洪畴训（陈某案罪犯）。犯抢劫罪，判处有期徒刑二年二个月，并处罚金人民币五千元；犯强奸罪，判处有期徒刑六年六个月，决定执行有期徒刑七年六个月，并处罚金人民币五千元。
+		style="position:absolute;
+		 left:1078px; 
+		 top:12230px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=吴剑林（平阳县陈某案共犯）强奸罪，判处有期徒刑十二年，附加剥夺政治权利二年；邰福弟（平阳县陈某案共犯）强奸罪，判处有期徒刑十一年，附加剥夺政治权利一年。
+		style="position:absolute;
+		 left:1098px; 
+		 top:12230px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=李文刚（南充市阳某案罪犯）强奸罪，判处有期徒刑十年六个月；赔偿附带民事诉讼原告人阳某医疗费、护理费、营养费、鉴定费等经济损失共计人民币8603元。
+		style="position:absolute;
+		 left:1112px; 
+		 top:12240px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=杨吉高（隆丰镇谭某某案罪犯），犯强奸罪，判处有期徒刑五年；犯猥亵儿童罪，判处有期徒刑五年，数罪并罚，决定执行有期徒刑八年六个月。
+		style="position:absolute;
+		 left:1096px; 
+		 top:12250px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=杨跃（绍兴市张某案罪犯）。强奸罪，判处有期徒刑四年六个月。
+		style="position:absolute;
+		 left:1096px; 
+		 top:12268px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=周学辉（陵市程某、胡某、查某案罪犯）犯强奸罪，判处有期徒刑十二年，犯猥亵儿童罪，判处有期徒刑三年；决定执行有期徒刑十三年。
+		style="position:absolute;
+		 left:1096px; 
+		 top:12288px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=张圣均（南通市李某某案罪犯），强制猥亵罪，判处有期徒刑三年六个月。
+		style="position:absolute;
+		 left:1070px; 
+		 top:12278px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=昂永平（上海市吴某某、袁某某案罪犯）犯猥亵儿童罪，判处有期徒刑四年；自刑罚执行完毕之日起五年内从事未成年人教育相关职业。
+		style="position:absolute;
+		 left:1055px; 
+		 top:12274px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=陈超添（南宁市文某案罪犯），猥亵儿童罪，判处有期徒刑三年。
+		style="position:absolute;
+		 left:1042px; 
+		 top:12283px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=陈守辞（仪陇县李某某、罗某案罪犯）强制猥亵罪，判处有期徒刑二年。
+		style="position:absolute;
+		 left:1054px; 
+		 top:12250px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=陈某（苍南县王某案罪犯）强制猥亵罪，判处有期徒刑二年八个月；犯罪工具手机一部，予以没收。
+		style="position:absolute;
+		 left:1070px; 
+		 top:12245px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=覃宣赛（武宣县黄某案罪犯）猥亵儿童罪，判处有期徒刑四年。
+		style="position:absolute;
+		 left:1081px; 
+		 top:12262px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=伍兴哲（贵定县欧某案罪犯）强制猥亵罪，判处有期徒刑二年六个月；赔偿附带民事诉讼原告人欧某心理治疗费等各项损失共计一万五千一百九十元三角五分。
+		style="position:absolute;
+		 left:1040px; 
+		 top:12262px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=蔡谷平（武汉市刘某案罪犯）强奸罪，判处有期徒刑九年；扣押于武汉市公安局青山区分局（钢城分局）的移动电话1部，予以没收，上缴国库。
+		style="position:absolute;
+		 left:1112px; 
+		 top:12271px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=陈佳强（柳州市黄某案罪犯）强奸罪，判处有期徒刑三年六个月。
+		style="position:absolute;
+		 left:1115px; 
+		 top:12299px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=符大壮（羊某某案罪犯）强奸罪，判处有期徒刑五年。
+		style="position:absolute;
+		 left:1118px; 
+		 top:12311px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=何小宝（惠州市吴某案罪犯）强奸罪，判处有期徒刑十四年六个月，剥夺政治权利三年。
+		style="position:absolute;
+		 left:1098px; 
+		 top:12321px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=胡绵军（保靖县张某案罪犯）强奸罪，判处有期徒刑三年。
+		style="position:absolute;
+		 left:1118px; 
+		 top:12339px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=黄兴桥（靖州县伍某案罪犯）强奸罪，判处有期徒刑三年六个月。
+		style="position:absolute;
+		 left:1102px; 
+		 top:12349px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=梁俊松（融水县凤某某案共犯）犯强奸罪，判处有期徒刑七年；梁俊杰（融水县凤某某案共犯）犯强奸罪，判处有期徒刑五年六个月。
+		style="position:absolute;
+		 left:1116px; 
+		 top:12379px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=林君凡（厦门市林某案罪犯）犯强奸罪，判处有期徒刑九年。
+		style="position:absolute;
+		 left:1110px; 
+		 top:12399px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=邢帅博（海门市袁某案罪犯）强奸罪，判处有期徒刑十二年。
+		style="position:absolute;
+		 left:1124px; 
+		 top:12429px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=桑小刚（北京市许某某案罪犯）强奸罪，判处有期徒刑五年。
+		style="position:absolute;
+		 left:1117px; 
+		 top:12446px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=吴凡（兴城市周某案罪犯）猥亵儿童罪，判处有期徒刑三年。
+		style="position:absolute;
+		 left:1039px; 
+		 top:12307px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=伍卫华（遂溪县朱某案罪犯）犯强奸罪，判处有期徒刑十年；犯猥亵儿童罪，判处有期徒刑三年，数罪并罚，决定执行有期徒刑十二年六个月；禁止被告人自刑罚执行完毕之日或假释之日起从事教师职业三年。3、赔偿经济损失共计人民币3350元。
+		style="position:absolute;
+		 left:1057px; 
+		 top:12309px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=许寅（高某案共犯）犯强奸罪，判处有期徒刑十一年，剥夺政治权利二年；彭杰（高某案共犯）犯强奸罪，判处有期徒刑八年。
+		style="position:absolute;
+		 left:1032px; 
+		 top:12328px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=龙某（毕节市刘某案罪犯）犯强奸罪，判处有期徒刑十一年，剥夺政治权利二年；犯敲诈勒索罪，判处有期徒刑二年，并处罚金人民币三千元；数罪并罚，决定执行有期徒刑十二年六个月，剥夺政治权利二年，并处罚金人民币三千元；龙某等20人共同赔偿附带民事诉讼原告人刘某医疗费、后续治疗费、护理费、交通费、食宿费等费用共计248120.93元，其中，龙某赔偿人民币6294.28元，龙某等20人互负连带赔偿责任。
+		style="position:absolute;
+		 left:1055px; 
+		 top:12350px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=陈某某案罪犯，犯强奸罪，判处有期徒刑三年。
+		style="position:absolute;
+		 left:1047px; 
+		 top:12359px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=蔡世胜（潘阳县周某案罪犯）强奸罪，有期徒刑五年。
+		style="position:absolute;
+		 left:1054px; 
+		 top:12399px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=王德伍（潘集区王某案罪犯）犯强奸罪，判处有期徒刑三年六个月。
+		style="position:absolute;
+		 left:1046px; 
+		 top:12434px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		<div title=邢帅博（海门市袁某案罪犯）强奸罪，判处有期徒刑十二年。
+		style="position:absolute;
+		 left:1052px; 
+		 top:12460px;
+		 width:10px; 
+		 height:10px; 
+		 z-index:2; 
+		 background-color: transparent;"> 
+		</div>
+		
+		
+		
+		
+		
+		
+		<div style="margin: 0 auto;
+				width: 750px;
+			 color: white;
+			 font-size: 1rem;
+			 background-color:gainsboro(0.3);
+			 text-align:left;">	
+			&nbsp;&nbsp;&nbsp;&nbsp;从已公布的案件文书来看，像鲍毓明这样有着高管、律师等精英人设的施暴者其实是少数。但我们不能就此认定这类人群施暴概率更小，从近几年媒体曝光的新闻来看，当施暴方有着较高的社会地位，性侵事实也更容易被掩盖，更难进入案件审判的流程。
+			</div>
+			<br/><br/><br/>
+			<h1><small>网络性侵——另一个“隐秘的角落”</small></h1>
+			<br/>
+			<div style="margin: 0 auto;
+				width: 750px;
+				 color: white;
+				 font-size: 1rem;
+				 background-color:gainsboro(0.3);
+				 text-align:left;">	
+				&nbsp;&nbsp;&nbsp;&nbsp;根据“女童保护”的数据，2019年曝光的性侵未成年人案例中，网友作案21起，包括线上作案和线下作案（网友约见面后实施性侵），占比9.91%。在一起网络性侵案件中，侵害者通过手机聊天软件，采取哄骗、威胁的手段骗取多名不满14周岁幼女向其发送裸照，并以将裸照发送给幼女亲友同学为由，胁迫见面，实施奸淫、猥亵行为。除了该案例之外，“女童保护”发现，还有一些施害人打着招募童星、主持人、演员，帮助变漂亮，提供高薪工作，网络恋爱等幌子，诱骗未成年人见面实施性侵害或者要求受害人向自己发淫秽、裸体照片、视频或文字。<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;而根据“女童保护”调查，仅四成家长对孩子上网进行严格监管，22.85%的青少年浏览过色情文字、图片或视频，其中偶尔有的占17.79%，经常有的占5.06%。同时，有8.70%的青少年有过未经父母、老师同意去见网友的经历。未成年人如何预防网络性侵，是一个亟待解决的难题。
+				</div>
+		</div>
+	<div id="ltitle">
+	<br/><br/><br/><br/><br/>
+	<h5 style="font-size: 2rem">	——
+	<span>星</span>
+	<span>星</span>
+	<span>点</span>
+	<span>亮</span>
+	<span>计</span>
+	<span>划</span>
+	——</h5><br/><br/></div>
+	<div style="margin: 0 auto;
+				width: 750px;
+					 color: white;
+					 font-size: 1rem;
+					 background-color:gainsboro(0.3);
+					 text-align:left;">	
+					&nbsp;&nbsp;&nbsp;&nbsp;2015年2月，易衡（@女王易衡）在互联网上发布了一个关于儿童性虐待的调查问卷，在这17522份有效问卷数据的结果显示，超过7成（70.11%）的受害者没有向他人披露自己经历性虐待的事实，而进一步再次统计了受害者没有告诉其他人的原因。
+					</div>
+				<br/>
+	<h1><small>受害者未倾诉原因</small></h1><br/>
+					<div style="margin: 0 auto;
+				width: 750px;
+						 color: white;
+						 font-size: 0.8rem;
+						 background-color:gainsboro(0.3);
+						 text-align: center;">
+					(请将鼠标轻轻移动到不同图标上，查看受害者未向他人倾诉的原因）
+						</div><br/>
+	<div id="wrapper">	
+		<div id="content">	
+			<ul id="bar">
+				<li id="iphone">
+					<div class="top">
+						<img src="img/保护.png" alt="iPhone" width="60px"/>
+					</div>
+					<div class="bottom">
+						<div class="infobox">
+							<h3>觉得没有人会保护自己</h3>
+							<p>16.71%</p>
+						</div>
+					</div>
+				</li>
+				<li id="macbook">
+					<div class="top">
+						<img src="img/家庭.png" alt="MacBook" width="50px"/>
+					</div>
+					<div class="bottom">
+						<div class="infobox">
+							<h3>为了自己或家庭的名誉</h3>
+							<p>27.9%</p>
+						</div>
+					</div>
+				</li>
+				<li id="ipod">
+					<div class="top">
+						<img src="img/谣言.png" alt="iPod" width="50px"/>
+					</div>
+					<div class="bottom">
+						<div class="infobox">
+							<h3>当时太小，不懂如何表达受害情况</h3>
+							<p>47.13%</p>
+						</div>
+					</div>
+				</li>
+				<li id="cinema">
+					<div class="top">
+						<img src="img/难过-no.png" alt="Cinema Display" width="50px"/>
+					</div>
+					<div class="bottom">
+						<div class="infobox">
+							<h3>不想让在乎自己的人感到难过</h3>
+							<p>18.47%</p>
+						</div>
+					</div>
+				</li>
+				<li id="macmini">
+					<div class="top">
+						<img src="img/疑问.png" alt="Mac Mini"  width="60px"/>
+					</div>
+					<div class="bottom">
+						<div class="infobox" >
+							<h3 style="font-family: "微软雅黑";font-size: 2rem">当时不知道自己经历了什么，<br />因而未在合适时机告诉他人</h3>
+							<p>60.79%</p>
+						</div>
+					</div>
+				</li>
+			</ul>	
+		</div>
+	</div>
+	
+	<br />
+<div style="margin: 0 auto;
+				width: 750px;
+				 color: white;
+				 font-size: 1rem;
+				 background-color:gainsboro(0.3);
+				 text-align:left;">	
+				&nbsp;&nbsp;&nbsp;&nbsp;从图中可以看出，当今中国的性教育处在空白地带，未成年人对于性知之甚少。这也是未成年人性侵案高发的原因：很少有人能够像“李星星”一样，了解清楚发生在自己身上的遭遇并寻求帮助。<br /><br/>&nbsp;&nbsp;&nbsp;&nbsp;“女童保护”发布的《“最美的春夏”2019年青春期性健康教育调查报告》显示，61.48%的青少年有过“青春期的困惑”，78.24%的青少年缺乏青春期性健康教育。由于缺乏青春期性健康教育，有一些青少年容易受到网络骗子的诱导。8.73%的青少年遇到过性侵害；62.70%的人不清楚如何预防。<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;对此，全国政协委员凌锋建议：应该将儿童防性侵教育纳入九年义务教育课程体系，同时完善网络儿童色情制品和网络治理，提高法定“性同意年龄”。营造良好的社会环境，对他们形成强有力的保护作用。全国政协委员陈忠红在今年全国两会上提交了《关于依法保护未成年人合法权益 严厉打击性侵未成年人犯罪的提案》，将对于未成年人的保护纳入更加切实的法律保护，才能让更多的“星星”不至于暗淡无光。
+				</div>
+		<br/><br/><br/>
+		<h1><small>各方求助渠道</small></h1>
+		<br/>
+		<div style="margin: 0 auto;
+				width: 750px;
+		 color: white;
+		 background-color:gainsboro(0.3);
+		 text-align: left;
+		 font-size: 1rem;">
+		&nbsp;&nbsp;&nbsp;&nbsp;根据@女王易衡的问卷调查结果，回顾首次经历性虐待的细节，有17.29%的人表示自己清楚自己正在被侵犯；46.9%的人表示自己隐约感觉到自己在经历的事情是不好的；但很遗憾，仍有34.16%的表示自己当时没有意识到，很久之后才了解自己经历了性虐待。在缺乏性教育和求助渠道的情况下，很多儿童不能清楚知道性虐待是什么，更不懂如何去保护自己。<br /><br />&nbsp;&nbsp;&nbsp;&nbsp;值得欣慰的是，我国正努力健全各方未成年人保护救助渠道，当未成年人受到侵害时，可以通过线下机构、线上微信公众号、微博等平台进行求助。希望未来，遭受侵害的“星星”能够越来越少。
+		</div>
+		<br/>
+		<div style="margin: 0 auto;
+				width: 750px;
+			 color: white;
+			 font-size: 0.8rem;
+			 background-color:gainsboro(0.3);
+			 text-align: center;">
+		(请点击图片并向左右拖拽，查看我国各地区未成年人保护救助渠道）
+			</div>
+	<div id="test">	
+		<div id="three-container"></div>					
+		</div>
+	<h1><small>星星的树洞</small></h1>
+	<br/>
+		<div style="margin: 0 auto;
+				width: 750px;
+		 color: white;
+		 background-color:gainsboro(0.3);
+		 text-align: left;
+		 font-size: 1rem;">
+		&nbsp;&nbsp;&nbsp;&nbsp;在@女王易衡的问卷调查结果中，那些被受害人信任的知情者在如何处理性虐待时，有50.48%的人开导和安慰受害者；有11.95%带受害者远离了施害人；有10.31%的人认为受害者小题大做；有8.57%的人选择开始对受害人进行性教育；但同时，有25.32%的知情人什么也没做。<br /><br />&nbsp;&nbsp;&nbsp;&nbsp;沉默源自于大环境的偏见，知情者的不作为往往会给孩子造成难以估量的精神伤害，所以在对儿童进行的性教育的同时，当我们遇到此类事件时，要对受害者进行心理上的开导和安慰，并鼓励受害者进行自我救助，让沉默的大多数不再成为常态。<br /><br />&nbsp;&nbsp;&nbsp;&nbsp;这里是一个隐秘的树洞，你可以在这里以一颗“星星”的身份写下自己的秘密，也可以写下想对星星们说的话。
+		</div>
+		
+		<br />
+		<div id="wrap">
+		<div id="form-wrap">
+			<form>
+				<h4 >隐秘的树洞</h4>
+				<label for="email" style="color: #AAAA7F;font-size: 0.8rem;">你的信息不会被发送至任何平台</label>
+				<textarea name="message" id="message"
+				value="信息将以匿名发送至树洞" ></textarea>
+				
+				<h4>守护星星</h4>
+				<label for="name" style="color: #AAAA7F;font-size: 0.8rem;">想对星星们说的话：</label>
+				<input type="text" name="name" value=""
+				id="name">
+				<br />
+				  
+				<input type="submit" name="submit" value="THANK YOU!"/>	
+					        
+			</form>
+		</div>
+		</div>
+<h5 style="font-size: 2rem">	————————————————————————————————</h5></div><br/>
+	<div style="margin: 0 auto;
+				width: 750px;
+			 color: white;
+			 font-size: 0.8rem;
+			 background-color:gainsboro(0.3);
+			 text-align: center;">
+		    数据来源：《关于儿童性侵的司法案例数据分析报告》、《2019年性侵儿童案例统计及儿童防性侵教育调查报告》、《上海市妇女儿童权益司法保护工作白皮书》、《“最美的春夏”2019年青春期性健康教育调查报告》、中国少年儿童文化艺术基金会女童保护基金、裁判文书网、@女王易衡、CNKI<br/>
+			团队成员：蒋菡婷、周祺蕙、杨唯潇、李庆、李欢<br/>
+			指导老师：刘娜<br/><br/>
+			<b>CONTACT US</b><br/>
+			tel：18299172798<br/>
+			E-mail：596934132@qq.com
+			</div><br/>
+			<br/>
+	</body>
+	
+</html>
